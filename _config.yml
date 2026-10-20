@@ -11,6 +11,7 @@ execute:
 exclude_patterns:
   - README.md
   - scripts/**
+  - tools/**
   - .github/**
 
 sphinx:
