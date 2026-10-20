@@ -3,92 +3,166 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>לוח תשובות</title>
+<title>לוח תשובות · תרגול כיתה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* Projector board: one big chart, controls in a slim bar above it. */
+/* Mission-control board for the projector: a deep navy room, amber instruments,
+   one large live panel that switches from "submissions coming in" to the revealed distribution. */
 :root{
-  --bg:#f6f8fa; --surface:#ffffff; --fg:#17212b; --muted:#5d6b79; --border:#d6dde4;
-  --bar:#4a7bb7; --right:#2e9e5b; --warn:#a8500b;
-  --font:'Alef','Segoe UI',Arial,sans-serif; --mono:ui-monospace,Consolas,monospace;
+  --room:#0c1626; --panel:#13223a; --panel-2:#192c49; --line:#2a4064;
+  --ink:#eaf1fb; --dim:#8fa3bf; --amber:#f2a93b; --amber-soft:rgba(242,169,59,.16);
+  --go:#3fd0a0; --go-soft:rgba(63,208,160,.18); --alert:#ff7a6b;
+  --ui:'Rubik','Segoe UI',Arial,sans-serif; --num:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#12171c; --surface:#1a2128; --fg:#e4e9ee; --muted:#95a2b0; --border:#2b3640;
-  --bar:#5d93d4; --right:#43b874; --warn:#e8a064;}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);
-  padding:20px max(20px,env(safe-area-inset-right)) 40px max(20px,env(safe-area-inset-left))}
-.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:var(--surface);
-  border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:22px}
-.bar label{display:flex;gap:8px;align-items:center;font-size:1.05rem}
-select,input,button{font:inherit;font-size:1.05rem;padding:6px 10px;border:1px solid var(--border);
-  border-radius:6px;background:var(--bg);color:var(--fg)}
-input#answer{width:9em;direction:ltr}
-button{cursor:pointer}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--bar);outline-offset:2px}
-.status{margin-inline-start:auto;color:var(--muted);font-size:.95rem}
-.status.err{color:var(--warn)}
-h1{font-size:2.6rem;margin:0 0 4px;font-weight:700}
-.count{font-size:1.4rem;color:var(--muted);margin:0 0 24px}
-#chart{display:flex;flex-direction:column;gap:14px}
-.row{display:grid;grid-template-columns:minmax(6em,auto) 1fr;gap:16px;align-items:center}
-.lbl{font-family:var(--mono);font-size:1.9rem;direction:ltr;text-align:left;white-space:nowrap}
-.track{display:flex;align-items:center;gap:12px;min-width:0}
-.fill{height:44px;background:var(--bar);border-radius:4px;min-width:6px;transition:width .4s}
-.row.right .fill{background:var(--right)}
-.row.right .lbl{color:var(--right);font-weight:700}
-.num{font-size:1.7rem;font-variant-numeric:tabular-nums}
-.empty{font-size:1.5rem;color:var(--muted);padding:30px 0}
-.setup{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;font-size:1.05rem}
-.setup input{width:min(100%,40em);direction:ltr}
-@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 85% -10%,#1b3157 0%,transparent 60%),var(--room);
+  color:var(--ink);font-family:var(--ui);
+  padding:18px max(24px,env(safe-area-inset-right)) 28px max(24px,env(safe-area-inset-left));
+  display:flex;flex-direction:column;gap:18px;min-height:100%}
+
+/* top strip */
+.strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.brand{font-size:.95rem;color:var(--dim);letter-spacing:.02em;margin-inline-end:auto}
+.brand b{color:var(--amber);font-weight:700}
+select,button,input{font:inherit;font-size:1rem;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:999px;padding:8px 16px}
+select{padding-inline:14px 30px}
+button{cursor:pointer;font-weight:500;transition:background .15s,border-color .15s,transform .1s}
+button:hover{border-color:var(--amber)}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--amber);color:#1c1304;border-color:var(--amber);font-weight:700}
+button.primary:hover{background:#ffbb55}
+button[disabled]{opacity:.35;cursor:default}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+/* hero: round title and timer */
+.hero{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+.eyebrow{font-size:1rem;color:var(--amber);font-weight:500;letter-spacing:.06em;margin:0 0 4px}
+h1{font-size:clamp(2.2rem,5vw,4rem);line-height:1.05;margin:0;font-weight:800;text-wrap:balance}
+.phase{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:6px 14px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);color:var(--dim);font-size:1rem}
+.phase i{width:10px;height:10px;border-radius:50%;background:var(--dim)}
+.phase.live{color:var(--ink);border-color:var(--amber)}
+.phase.live i{background:var(--alert);animation:blink 1.2s infinite}
+.phase.revealed{color:var(--go);border-color:var(--go)}
+.phase.revealed i{background:var(--go)}
+@keyframes blink{50%{opacity:.25}}
+
+.timer{position:relative;width:170px;height:170px;flex:none}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer .track{fill:none;stroke:var(--panel-2);stroke-width:12}
+.timer .arc{fill:none;stroke:var(--amber);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
+.timer.low .arc{stroke:var(--alert)}
+.timer .t{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--num);font-size:2.4rem;
+  font-weight:600;direction:ltr}
+.timer.done .t{color:var(--alert);animation:blink 1s infinite}
+.timer .cap{position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:.8rem;color:var(--dim)}
+
+/* main panel */
+.panel{flex:1;background:linear-gradient(180deg,var(--panel),#0f1d33);border:1px solid var(--line);border-radius:18px;
+  padding:28px clamp(18px,3vw,40px);display:flex;flex-direction:column;gap:22px;min-height:330px}
+.counter{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.counter .n{font-family:var(--num);font-size:clamp(4rem,10vw,7.5rem);font-weight:600;line-height:1;color:var(--amber);
+  font-variant-numeric:tabular-nums}
+.counter .u{font-size:clamp(1.4rem,2.6vw,2rem);font-weight:500}
+.counter .hint{color:var(--dim);font-size:1.1rem;margin-inline-start:auto}
+.dots{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.dots span{width:26px;height:26px;border-radius:7px;background:var(--amber);box-shadow:0 0 10px var(--amber-soft)}
+.dots span.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.idle{font-size:1.4rem;color:var(--dim);line-height:1.6}
+.idle b{color:var(--ink)}
+
+.bars{display:flex;flex-direction:column;gap:14px}
+.bar{display:grid;grid-template-columns:minmax(7ch,auto) 1fr;gap:18px;align-items:center;transition:opacity .3s}
+.bar .lbl{font-family:var(--num);font-size:clamp(1.4rem,2.8vw,2.1rem);direction:ltr;text-align:left;white-space:nowrap}
+.bar .tr{display:flex;align-items:center;gap:14px;min-width:0}
+.bar .fill{height:clamp(34px,5vh,50px);border-radius:8px;background:linear-gradient(90deg,#c9861f,var(--amber));
+  width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.bar .c{font-family:var(--num);font-size:clamp(1.3rem,2.4vw,1.9rem);font-weight:600}
+.bar .tag{font-size:1rem;color:var(--go);font-weight:700;white-space:nowrap}
+.bars.marked .bar{opacity:.45}
+.bars.marked .bar.right{opacity:1}
+.bar.right .fill{background:linear-gradient(90deg,#24a77d,var(--go));box-shadow:0 0 24px var(--go-soft)}
+.bar.right .lbl{color:var(--go)}
+.empty{font-size:1.4rem;color:var(--dim)}
+
+/* footer controls shown after the reveal */
+.after{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center}
+.after label{display:flex;align-items:center;gap:10px;font-size:1.05rem}
+.after input{width:10em;direction:ltr;border-radius:10px}
+.after a{color:var(--amber);font-weight:700;text-decoration:none;border:1px solid var(--amber);border-radius:999px;padding:8px 16px}
+.after a:hover{background:var(--amber-soft)}
+.status{margin-inline-start:auto;font-size:.9rem;color:var(--dim)}
+.status.err{color:var(--alert)}
+
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr}
+  .timer{width:130px;height:130px}.timer .t{font-size:1.8rem}.timer .cap{bottom:24px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="setup" id="setup" hidden>
-  <p>הדביקו את הקישור לגיליון התשובות (Google Sheets). הגיליון צריך להיות משותף כ-<b>Anyone with the link: Viewer</b>.</p>
-  <input id="sheetlink" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
-  <button id="savesheet" type="button">שמירה</button>
+<div class="strip">
+  <div class="brand"><b>מחשבים לפיזיקאים</b> · תרגול כיתה · לוח תשובות</div>
+  <select id="round" aria-label="סבב"></select>
+  <select id="mins" aria-label="משך הסבב">
+    <option value="5">5 דק׳</option><option value="6">6 דק׳</option>
+    <option value="7" selected>7 דק׳</option><option value="8">8 דק׳</option><option value="10">10 דק׳</option>
+  </select>
+  <button id="start" class="primary" type="button">התחלת סבב</button>
+  <button id="reveal" type="button" disabled>סיום וחשיפה</button>
 </div>
 
-<div class="bar">
-  <label>סבב
-    <select id="round">
-      <option value="gimli">0. גימלי</option>
-      <option value="dhahran">1. דהראן</option>
-      <option value="mars">2. מאדים</option>
-      <option value="ariane">3. אריאן 5</option>
-      <option value="signal">4. אות רדיו</option>
-    </select>
-  </label>
-  <button id="start" type="button" title="מתעלם מהגשות שנשלחו לפני הלחיצה">התחלת סבב מעכשיו</button>
-  <label>תשובה נכונה <input id="answer" placeholder="לסימון בירוק"></label>
-  <span class="status" id="status">טוען…</span>
-</div>
+<section class="hero">
+  <div>
+    <p class="eyebrow" id="eyebrow"></p>
+    <h1 id="title"></h1>
+    <div class="phase" id="phase"><i></i><span id="phaseText"></span></div>
+  </div>
+  <div class="timer" id="timer" aria-live="off">
+    <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="arc" id="arc" cx="60" cy="60" r="52"/></svg>
+    <div class="t" id="clock">7:00</div>
+    <div class="cap" id="cap">לעבודה</div>
+  </div>
+</section>
 
-<h1 id="title"></h1>
-<p class="count" id="count"></p>
-<div id="chart"></div>
+<main class="panel" id="panel"></main>
+
+<div class="after" id="after" hidden>
+  <label>תשובה נכונה <input id="answer" placeholder="לסימון בירוק" autocomplete="off"></label>
+  <a id="solution" target="_blank" rel="noopener">לעמוד הפתרון</a>
+</div>
+<div class="status" id="status">טוען…</div>
 
 <script>
 // ------------------------------------------------------------ settings
-const SHEET_ID = "16g-krvleCYMoLnQxm9Apx8kxl_gp5DWvYAUmpMpeHfg";          // the id in docs.google.com/spreadsheets/d/<SHEET_ID>/edit
+const SHEET_ID = "16g-krvleCYMoLnQxm9Apx8kxl_gp5DWvYAUmpMpeHfg";
 const GID = "1276875717";       // the "Form Responses 1" tab
 const REFRESH_MS = 4000;
 const TOP = 8;
+const ROUNDS = [
+  { id: "gimli",   n: 0, title: "גימלי",       sub: "דוגמה · יולי 1983",  file: "00_gimli" },
+  { id: "dhahran", n: 1, title: "דהראן",       sub: "פברואר 1991",        file: "01_dhahran" },
+  { id: "mars",    n: 2, title: "מאדים",       sub: "ספטמבר 1999",        file: "02_mars" },
+  { id: "ariane",  n: 3, title: "אריאן 5",     sub: "יוני 1996",          file: "03_ariane" },
+  { id: "signal",  n: 4, title: "אות רדיו",    sub: "1977",               file: "04_signal" },
+];
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const DEMO = params.has("demo");
-let since = null;               // Date: ignore submissions before this
-let lastRows = [];
+const S = { phase: "idle", since: null, endAt: null, rows: [], shownDots: 0, revealedOnce: false };
 
-function store(k, v){ try{ v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v) }catch(e){} }
+function store(k, v){ try{ localStorage.setItem(k, v) }catch(e){} }
 function load(k){ try{ return localStorage.getItem(k) }catch(e){ return null } }
-
-function sheetId(){
-  if (SHEET_ID) return SHEET_ID;
-  return load("cfs_sheet_id") || "";
-}
+function sheetId(){ return SHEET_ID || load("cfs_sheet_id") || ""; }
+const round = () => ROUNDS.find(r => r.id === $("round").value) || ROUNDS[0];
 
 // Group answers like the notebooks do: numbers to 3 significant figures, text trimmed.
 function label(v){
@@ -159,17 +233,61 @@ async function fetchRows(){
   }
 }
 
+
 function demoRows(){
-  const now = new Date(), r = [];
-  const add = (round, answer, n) => { for (let i = 0; i < n; i++) r.push({ t: now, round, answer }); };
-  add("gimli", "10116.892655367232", 9); add("gimli", "22300", 4); add("gimli", "12598.87", 2); add("gimli", "4916.87", 1);
+  const t = S.since || new Date(), r = [];
+  const add = (round, answer, n) => { for (let i = 0; i < n; i++) r.push({ t, round, answer }); };
+  const k = Math.min(16, Math.floor((Date.now() % 60000) / 3000) + 4);   // grows over time to show the dots
+  add("gimli", "10116.892655367232", Math.ceil(k * .55)); add("gimli", "22300", Math.ceil(k * .25));
+  add("gimli", "12598.87", Math.ceil(k * .12)); add("gimli", "4916.87", 1);
   add("dhahran", "575.4089355803682", 12); add("dhahran", "57.54089355803682", 5); add("dhahran", "0.343322753926234", 2);
   return r;
 }
 
-function render(){
-  const round = $("round").value;
-  const rows = lastRows.filter(x => x.round === round && (!since || !x.t || x.t >= since) && String(x.answer).trim() !== "");
+// ------------------------------------------------------------ rendering
+function current(){
+  const r = round().id;
+  return S.rows.filter(x => x.round === r && (!S.since || !x.t || x.t >= S.since) && String(x.answer).trim() !== "");
+}
+
+function renderHeader(){
+  const r = round();
+  $("eyebrow").textContent = r.n === 0 ? "דוגמה על הלוח" : `סבב ${r.n} מתוך 4`;
+  $("title").textContent = `${r.title} · ${r.sub.replace("דוגמה · ", "")}`;
+  const ph = $("phase");
+  ph.className = "phase " + S.phase;
+  $("phaseText").textContent = { idle: "ממתין להתחלה", live: "הסבב פעיל · התשובות מוסתרות", revealed: "התשובות נחשפו" }[S.phase];
+  $("start").textContent = S.phase === "live" ? "התחלה מחדש" : "התחלת סבב";
+  $("reveal").disabled = S.phase !== "live";
+  $("after").hidden = S.phase !== "revealed";
+  $("solution").href = `pages/${r.file}_solution.html`;
+}
+
+function renderPanel(){
+  const panel = $("panel"), rows = current(), n = rows.length;
+  if (S.phase !== "revealed") {
+    if (!panel.querySelector(".counter")) {
+      panel.innerHTML = `<div class="counter"><span class="n" id="n">0</span><span class="u" id="u">הגשות</span>
+        <span class="hint" id="hint"></span></div><div class="dots" id="dots"></div>`;
+      S.shownDots = 0;
+    }
+    $("n").textContent = n;
+    $("u").textContent = n === 1 ? "הגשה" : "הגשות";
+    $("hint").textContent = S.phase === "idle"
+      ? "לחצו על ״התחלת סבב״ כשהעמוד פתוח לסטודנטים"
+      : "ההתפלגות תוצג אחרי ״סיום וחשיפה״";
+    const dots = $("dots");
+    if (n < S.shownDots) { dots.replaceChildren(); S.shownDots = 0; }
+    for (let i = S.shownDots; i < n; i++) {
+      const d = document.createElement("span");
+      if (S.shownDots > 0 || S.phase === "live") d.className = "pop";
+      dots.appendChild(d);
+    }
+    S.shownDots = n;
+    return;
+  }
+
+  // revealed: the distribution
   const counts = new Map();
   rows.forEach(x => { const k = label(x.answer); counts.set(k, (counts.get(k) || 0) + 1); });
   let items = [...counts.entries()].sort((p, q) => q[1] - p[1]);
@@ -179,52 +297,86 @@ function render(){
   }
   const right = $("answer").value.trim() === "" ? null : label($("answer").value);
   const max = Math.max(1, ...items.map(x => x[1]));
-
-  $("title").textContent = $("round").selectedOptions[0].textContent;
-  $("count").textContent = rows.length === 1 ? "הגשה אחת" : `${rows.length} הגשות`;
-  const chart = $("chart");
-  chart.replaceChildren();
-  if (!items.length) {
-    const e = document.createElement("div"); e.className = "empty"; e.textContent = "עדיין אין הגשות בסבב הזה.";
-    chart.appendChild(e); return;
-  }
-  for (const [k, n] of items) {
-    const row = document.createElement("div"); row.className = "row" + (right !== null && k === right ? " right" : "");
-    const l = document.createElement("div"); l.className = "lbl"; l.textContent = k;
-    const t = document.createElement("div"); t.className = "track";
-    const f = document.createElement("div"); f.className = "fill"; f.style.width = (100 * n / max * 0.85) + "%";
-    const c = document.createElement("span"); c.className = "num"; c.textContent = n;
-    t.append(f, c); row.append(l, t); chart.appendChild(row);
+  let bars = panel.querySelector(".bars");
+  const fresh = !bars;
+  if (fresh) { panel.innerHTML = `<div class="counter"><span class="n">${n}</span><span class="u">${n === 1 ? "הגשה" : "הגשות"}</span></div><div class="bars"></div>`; bars = panel.querySelector(".bars"); }
+  else panel.querySelector(".counter .n").textContent = n;
+  bars.classList.toggle("marked", right !== null && items.some(x => x[0] === right));
+  bars.replaceChildren();
+  if (!items.length) { bars.innerHTML = `<div class="empty">אין הגשות בסבב הזה.</div>`; return; }
+  for (const [k, c] of items) {
+    const row = document.createElement("div");
+    row.className = "bar" + (right !== null && k === right ? " right" : "");
+    row.innerHTML = `<div class="lbl"></div><div class="tr"><div class="fill"></div><span class="c"></span></div>`;
+    row.querySelector(".lbl").textContent = k;
+    row.querySelector(".c").textContent = c;
+    if (right !== null && k === right) {
+      const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "✓ תשובה נכונה";
+      row.querySelector(".tr").appendChild(tag);
+    }
+    bars.appendChild(row);
+    const w = (100 * c / max * 0.82) + "%";
+    const fill = row.querySelector(".fill");
+    if (fresh) requestAnimationFrame(() => requestAnimationFrame(() => fill.style.width = w));
+    else { fill.style.transition = "none"; fill.style.width = w; }
   }
 }
+
+function renderTimer(){
+  const total = +$("mins").value * 60;
+  let left = total;
+  if (S.phase === "live" && S.endAt) left = Math.max(0, Math.round((S.endAt - Date.now()) / 1000));
+  if (S.phase === "revealed") left = 0;
+  const C = 2 * Math.PI * 52, arc = $("arc");
+  arc.style.strokeDasharray = C;
+  arc.style.strokeDashoffset = C * (1 - left / total);
+  $("clock").textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+  const t = $("timer");
+  t.classList.toggle("low", S.phase === "live" && left <= 60);
+  t.classList.toggle("done", S.phase === "live" && left === 0);
+  $("cap").textContent = S.phase === "live" && left === 0 ? "הזמן נגמר" : S.phase === "revealed" ? "הסתיים" : "לעבודה";
+}
+
+function render(){ renderHeader(); renderPanel(); renderTimer(); }
 
 async function tick(){
   const st = $("status");
   try {
-    lastRows = await fetchRows();
+    S.rows = await fetchRows();
     st.className = "status";
     st.textContent = (DEMO ? "נתוני דוגמה · " : "") + "עודכן " + new Date().toLocaleTimeString("he-IL");
-    render();
   } catch (e) {
     st.className = "status err";
-    if (e.message === "no-sheet") { $("setup").hidden = false; st.textContent = "חסר קישור לגיליון"; }
-    else st.textContent = "לא ניתן לקרוא את הגיליון. ודאו שהוא משותף כ-Anyone with the link: Viewer. (" + e.message + ")";
+    st.textContent = "לא ניתן לקרוא את הגיליון. ודאו שהוא משותף כ-Anyone with the link: Viewer. (" + e.message + ")";
   }
+  renderPanel();
 }
 
 // ------------------------------------------------------------ controls
+for (const r of ROUNDS) {
+  const o = document.createElement("option");
+  o.value = r.id; o.textContent = `${r.n}. ${r.title}`;
+  $("round").appendChild(o);
+}
 $("round").value = params.get("round") || load("cfs_round") || "gimli";
-$("round").addEventListener("change", () => { store("cfs_round", $("round").value); since = null; $("answer").value = ""; render(); });
-$("answer").addEventListener("input", render);
-$("start").addEventListener("click", () => { since = new Date(); $("start").textContent = "הסבב התחיל ב-" + since.toLocaleTimeString("he-IL"); render(); });
-$("savesheet").addEventListener("click", () => {
-  const m = /\/d\/([a-zA-Z0-9_-]{20,})/.exec($("sheetlink").value) || /^([a-zA-Z0-9_-]{20,})$/.exec($("sheetlink").value.trim());
-  if (!m) { $("status").textContent = "זה לא נראה כמו קישור לגיליון Google Sheets."; return; }
-  store("cfs_sheet_id", m[1]); $("setup").hidden = true; tick();
+$("round").addEventListener("change", () => {
+  store("cfs_round", $("round").value);
+  S.phase = "idle"; S.since = null; S.endAt = null; $("answer").value = ""; $("panel").replaceChildren(); render();
 });
+$("mins").addEventListener("change", renderTimer);
+$("start").addEventListener("click", () => {
+  S.phase = "live"; S.since = new Date(); S.endAt = Date.now() + +$("mins").value * 60000;
+  $("answer").value = ""; $("panel").replaceChildren(); render();
+});
+$("reveal").addEventListener("click", () => {
+  S.phase = "revealed"; $("panel").replaceChildren(); render(); $("answer").focus();
+});
+$("answer").addEventListener("input", renderPanel);
 
+render();
 tick();
 setInterval(tick, REFRESH_MS);
+setInterval(renderTimer, 1000);
 </script>
 </body>
 </html>
