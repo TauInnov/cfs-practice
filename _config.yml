@@ -1,6 +1,7 @@
 # Practice book for in-class rounds. Same look as the course site (TauInnov/CFS).
 title: "תרגול כיתה: מחשבים לפיזיקאים"
 author: TauInnov
+copyright: "2026"
 logo: _static/tau.png
 
 # Practice pages are released without outputs, so never execute them at build time.
