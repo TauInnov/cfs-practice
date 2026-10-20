@@ -15,7 +15,9 @@
 ## עמודי התרגול
 
 <!-- PAGES:START -->
-_עדיין לא נפתחו עמודים._
+| עמוד | הרצה | הורדה |
+|---|---|---|
+| 0. עמוד בדיקה | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TauInnov/cfs-practice/blob/main/pages/00_test.ipynb) | [הורדה](pages/00_test.ipynb) |
 <!-- PAGES:END -->
 
 </div>
