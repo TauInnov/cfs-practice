@@ -16,6 +16,7 @@ exclude_patterns:
 
 sphinx:
   config:
+    html_extra_path: ["extra"]
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
     mathjax3_config:
       tex:

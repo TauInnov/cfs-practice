@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>לוח תשובות</title>
+<style>
+/* Projector board: one big chart, controls in a slim bar above it. */
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --fg:#17212b; --muted:#5d6b79; --border:#d6dde4;
+  --bar:#4a7bb7; --right:#2e9e5b; --warn:#a8500b;
+  --font:'Alef','Segoe UI',Arial,sans-serif; --mono:ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#12171c; --surface:#1a2128; --fg:#e4e9ee; --muted:#95a2b0; --border:#2b3640;
+  --bar:#5d93d4; --right:#43b874; --warn:#e8a064;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);
+  padding:20px max(20px,env(safe-area-inset-right)) 40px max(20px,env(safe-area-inset-left))}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:22px}
+.bar label{display:flex;gap:8px;align-items:center;font-size:1.05rem}
+select,input,button{font:inherit;font-size:1.05rem;padding:6px 10px;border:1px solid var(--border);
+  border-radius:6px;background:var(--bg);color:var(--fg)}
+input#answer{width:9em;direction:ltr}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--bar);outline-offset:2px}
+.status{margin-inline-start:auto;color:var(--muted);font-size:.95rem}
+.status.err{color:var(--warn)}
+h1{font-size:2.6rem;margin:0 0 4px;font-weight:700}
+.count{font-size:1.4rem;color:var(--muted);margin:0 0 24px}
+#chart{display:flex;flex-direction:column;gap:14px}
+.row{display:grid;grid-template-columns:minmax(6em,auto) 1fr;gap:16px;align-items:center}
+.lbl{font-family:var(--mono);font-size:1.9rem;direction:ltr;text-align:left;white-space:nowrap}
+.track{display:flex;align-items:center;gap:12px;min-width:0}
+.fill{height:44px;background:var(--bar);border-radius:4px;min-width:6px;transition:width .4s}
+.row.right .fill{background:var(--right)}
+.row.right .lbl{color:var(--right);font-weight:700}
+.num{font-size:1.7rem;font-variant-numeric:tabular-nums}
+.empty{font-size:1.5rem;color:var(--muted);padding:30px 0}
+.setup{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;font-size:1.05rem}
+.setup input{width:min(100%,40em);direction:ltr}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="setup" id="setup" hidden>
+  <p>הדביקו את הקישור לגיליון התשובות (Google Sheets). הגיליון צריך להיות משותף כ-<b>Anyone with the link: Viewer</b>.</p>
+  <input id="sheetlink" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+  <button id="savesheet" type="button">שמירה</button>
+</div>
+
+<div class="bar">
+  <label>סבב
+    <select id="round">
+      <option value="gimli">0. גימלי</option>
+      <option value="dhahran">1. דהראן</option>
+      <option value="mars">2. מאדים</option>
+      <option value="ariane">3. אריאן 5</option>
+      <option value="signal">4. אות רדיו</option>
+    </select>
+  </label>
+  <button id="start" type="button" title="מתעלם מהגשות שנשלחו לפני הלחיצה">התחלת סבב מעכשיו</button>
+  <label>תשובה נכונה <input id="answer" placeholder="לסימון בירוק"></label>
+  <span class="status" id="status">טוען…</span>
+</div>
+
+<h1 id="title"></h1>
+<p class="count" id="count"></p>
+<div id="chart"></div>
+
+<script>
+// ------------------------------------------------------------ settings
+const SHEET_ID = "16g-krvleCYMoLnQxm9Apx8kxl_gp5DWvYAUmpMpeHfg";          // the id in docs.google.com/spreadsheets/d/<SHEET_ID>/edit
+const GID = "1276875717";       // the "Form Responses 1" tab
+const REFRESH_MS = 4000;
+const TOP = 8;
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const DEMO = params.has("demo");
+let since = null;               // Date: ignore submissions before this
+let lastRows = [];
+
+function store(k, v){ try{ v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v) }catch(e){} }
+function load(k){ try{ return localStorage.getItem(k) }catch(e){ return null } }
+
+function sheetId(){
+  if (SHEET_ID) return SHEET_ID;
+  return load("cfs_sheet_id") || "";
+}
+
+// Group answers like the notebooks do: numbers to 3 significant figures, text trimmed.
+function label(v){
+  const s = String(v ?? "").trim();
+  const x = Number(s.replace(/,/g, ""));
+  if (s === "" || !isFinite(x)) return s;
+  if (Math.abs(x) >= 1000) return Math.round(x).toLocaleString("en-US");
+  return String(Number(x.toPrecision(3)));
+}
+
+// gviz date cells look like "Date(2026,9,20,18,10,5)" (month is 0-based)
+function parseDate(v){
+  const m = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/.exec(v || "");
+  return m ? new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)) : null;
+}
+
+// Read the sheet through the gviz endpoint with JSONP (no CORS needed, no publish delay).
+function fetchRows(){
+  if (DEMO) return Promise.resolve(demoRows());
+  const id = sheetId();
+  if (!id) return Promise.reject(new Error("no-sheet"));
+  return new Promise((resolve, reject) => {
+    const cb = "__cfs" + Date.now();
+    const s = document.createElement("script");
+    const timer = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 8000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = resp => {
+      cleanup();
+      if (!resp || resp.status === "error") { reject(new Error("sheet")); return; }
+      const cols = resp.table.cols.map(c => (c.label || "").trim().toLowerCase());
+      let r = cols.indexOf("round"), a = cols.indexOf("answer");
+      if (r < 0) r = 1; if (a < 0) a = 2;
+      resolve(resp.table.rows.map(row => {
+        const c = row.c || [];
+        return { t: parseDate(c[0] && c[0].v),
+                 round: String((c[r] && (c[r].v ?? c[r].f)) ?? "").trim().toLowerCase(),
+                 answer: (c[a] && (c[a].f ?? c[a].v)) ?? "" };
+      }));
+    };
+    s.onerror = () => { cleanup(); reject(new Error("sheet")); };
+    s.src = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?gid=${GID}&tqx=responseHandler:${cb}&_=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+
+function demoRows(){
+  const now = new Date(), r = [];
+  const add = (round, answer, n) => { for (let i = 0; i < n; i++) r.push({ t: now, round, answer }); };
+  add("gimli", "10116.892655367232", 9); add("gimli", "22300", 4); add("gimli", "12598.87", 2); add("gimli", "4916.87", 1);
+  add("dhahran", "575.4089355803682", 12); add("dhahran", "57.54089355803682", 5); add("dhahran", "0.343322753926234", 2);
+  return r;
+}
+
+function render(){
+  const round = $("round").value;
+  const rows = lastRows.filter(x => x.round === round && (!since || !x.t || x.t >= since) && String(x.answer).trim() !== "");
+  const counts = new Map();
+  rows.forEach(x => { const k = label(x.answer); counts.set(k, (counts.get(k) || 0) + 1); });
+  let items = [...counts.entries()].sort((p, q) => q[1] - p[1]);
+  if (items.length > TOP) {
+    const rest = items.slice(TOP).reduce((s, x) => s + x[1], 0);
+    items = items.slice(0, TOP).concat([["אחר", rest]]);
+  }
+  const right = $("answer").value.trim() === "" ? null : label($("answer").value);
+  const max = Math.max(1, ...items.map(x => x[1]));
+
+  $("title").textContent = $("round").selectedOptions[0].textContent;
+  $("count").textContent = rows.length === 1 ? "הגשה אחת" : `${rows.length} הגשות`;
+  const chart = $("chart");
+  chart.replaceChildren();
+  if (!items.length) {
+    const e = document.createElement("div"); e.className = "empty"; e.textContent = "עדיין אין הגשות בסבב הזה.";
+    chart.appendChild(e); return;
+  }
+  for (const [k, n] of items) {
+    const row = document.createElement("div"); row.className = "row" + (right !== null && k === right ? " right" : "");
+    const l = document.createElement("div"); l.className = "lbl"; l.textContent = k;
+    const t = document.createElement("div"); t.className = "track";
+    const f = document.createElement("div"); f.className = "fill"; f.style.width = (100 * n / max * 0.85) + "%";
+    const c = document.createElement("span"); c.className = "num"; c.textContent = n;
+    t.append(f, c); row.append(l, t); chart.appendChild(row);
+  }
+}
+
+async function tick(){
+  const st = $("status");
+  try {
+    lastRows = await fetchRows();
+    st.className = "status";
+    st.textContent = (DEMO ? "נתוני דוגמה · " : "") + "עודכן " + new Date().toLocaleTimeString("he-IL");
+    render();
+  } catch (e) {
+    st.className = "status err";
+    if (e.message === "no-sheet") { $("setup").hidden = false; st.textContent = "חסר קישור לגיליון"; }
+    else st.textContent = "לא ניתן לקרוא את הגיליון. ודאו שהוא משותף כ-Anyone with the link: Viewer.";
+  }
+}
+
+// ------------------------------------------------------------ controls
+$("round").value = params.get("round") || load("cfs_round") || "gimli";
+$("round").addEventListener("change", () => { store("cfs_round", $("round").value); since = null; $("answer").value = ""; render(); });
+$("answer").addEventListener("input", render);
+$("start").addEventListener("click", () => { since = new Date(); $("start").textContent = "הסבב התחיל ב-" + since.toLocaleTimeString("he-IL"); render(); });
+$("savesheet").addEventListener("click", () => {
+  const m = /\/d\/([a-zA-Z0-9_-]{20,})/.exec($("sheetlink").value) || /^([a-zA-Z0-9_-]{20,})$/.exec($("sheetlink").value.trim());
+  if (!m) { $("status").textContent = "זה לא נראה כמו קישור לגיליון Google Sheets."; return; }
+  store("cfs_sheet_id", m[1]); $("setup").hidden = true; tick();
+});
+
+tick();
+setInterval(tick, REFRESH_MS);
+</script>
+</body>
+</html>
