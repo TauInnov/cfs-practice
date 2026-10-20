@@ -1,0 +1,34 @@
+/* Right-to-left text, matching the course site (TauInnov/CFS) */
+p, li, ul, h1, h2, h3, h4, table,
+details:not(.hide), details:not(.hide) > summary {
+    direction: rtl;
+    text-align: right;
+}
+
+:root {
+    --pst-font-family-base: "Alef", sans-serif;
+}
+
+.section-nav {
+    padding-right: 0;
+}
+
+/* Hints: make the clickable summary look clickable */
+details:not(.hide) {
+    margin: 0.4em 0;
+}
+details:not(.hide) > summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Collapsed code cells (setup) stay left-to-right */
+details.hide, details.hide pre {
+    direction: ltr;
+    text-align: left;
+}
+
+div.output_area pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

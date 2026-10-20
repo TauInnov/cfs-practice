@@ -1,0 +1,33 @@
+# Practice book for in-class rounds. Same look as the course site (TauInnov/CFS).
+title: "תרגול כיתה: מחשבים לפיזיקאים"
+author: TauInnov
+logo: _static/tau.png
+
+# Practice pages are released without outputs, so never execute them at build time.
+execute:
+  execute_notebooks: "off"
+
+exclude_patterns:
+  - README.md
+  - scripts/**
+  - .github/**
+
+sphinx:
+  config:
+    mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+    mathjax3_config:
+      tex:
+        inlineMath: [["$", "$"], ["\\(", "\\)"]]
+        processEscapes: true
+
+repository:
+  url: https://github.com/TauInnov/cfs-practice
+  branch: main
+
+html:
+  use_repository_button: true
+  extra_css:
+    - rtl.css
+
+launch_buttons:
+  colab_url: "https://colab.research.google.com"
