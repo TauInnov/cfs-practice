@@ -105,33 +105,58 @@ function parseDate(v){
   return m ? new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)) : null;
 }
 
-// Read the sheet through the gviz endpoint with JSONP (no CORS needed, no publish delay).
-function fetchRows(){
-  if (DEMO) return Promise.resolve(demoRows());
-  const id = sheetId();
-  if (!id) return Promise.reject(new Error("no-sheet"));
+// Read the sheet through the gviz endpoint (no publish delay).
+// First a plain fetch; if the browser refuses it, fall back to JSONP via a script tag.
+function parseResp(resp){
+  if (!resp || resp.status === "error") {
+    const d = resp && resp.errors && resp.errors[0];
+    throw new Error("sheet error: " + (d ? (d.detailed_message || d.message || d.reason) : "unknown"));
+  }
+  const cols = resp.table.cols.map(c => (c.label || "").trim().toLowerCase());
+  let r = cols.indexOf("round"), a = cols.indexOf("answer");
+  if (r < 0) r = 1; if (a < 0) a = 2;
+  return resp.table.rows.map(row => {
+    const c = row.c || [];
+    return { t: parseDate(c[0] && c[0].v),
+             round: String((c[r] && (c[r].v ?? c[r].f)) ?? "").trim().toLowerCase(),
+             answer: (c[a] && (c[a].f ?? c[a].v)) ?? "" };
+  });
+}
+
+function jsonp(base){
   return new Promise((resolve, reject) => {
     const cb = "__cfs" + Date.now();
     const s = document.createElement("script");
-    const timer = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 8000);
+    const timer = setTimeout(() => { cleanup(); reject(new Error("jsonp timeout")); }, 8000);
     function cleanup(){ clearTimeout(timer); delete window[cb]; s.remove(); }
-    window[cb] = resp => {
-      cleanup();
-      if (!resp || resp.status === "error") { reject(new Error("sheet")); return; }
-      const cols = resp.table.cols.map(c => (c.label || "").trim().toLowerCase());
-      let r = cols.indexOf("round"), a = cols.indexOf("answer");
-      if (r < 0) r = 1; if (a < 0) a = 2;
-      resolve(resp.table.rows.map(row => {
-        const c = row.c || [];
-        return { t: parseDate(c[0] && c[0].v),
-                 round: String((c[r] && (c[r].v ?? c[r].f)) ?? "").trim().toLowerCase(),
-                 answer: (c[a] && (c[a].f ?? c[a].v)) ?? "" };
-      }));
-    };
-    s.onerror = () => { cleanup(); reject(new Error("sheet")); };
-    s.src = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?gid=${GID}&tqx=responseHandler:${cb}&_=${Date.now()}`;
+    window[cb] = resp => { cleanup(); try { resolve(parseResp(resp)); } catch (e) { reject(e); } };
+    s.onerror = () => { cleanup(); reject(new Error("jsonp blocked")); };
+    s.src = `${base}&tqx=responseHandler:${cb}&_=${Date.now()}`;
     document.head.appendChild(s);
   });
+}
+
+async function fetchRows(){
+  if (DEMO) return demoRows();
+  const id = sheetId();
+  if (!id) throw new Error("no-sheet");
+  const base = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?gid=${GID}`;
+  let first;
+  try {
+    const r = await fetch(`${base}&tqx=out:json&_=${Date.now()}`, { cache: "no-store" });
+    if (!r.ok) throw new Error("http " + r.status);
+    const text = await r.text();
+    const i = text.indexOf("{"), j = text.lastIndexOf("}");
+    if (i < 0 || j < 0) throw new Error("not json (sign-in page?)");
+    return parseResp(JSON.parse(text.slice(i, j + 1)));
+  } catch (e) {
+    first = e;
+  }
+  try {
+    return await jsonp(base);
+  } catch (e) {
+    throw new Error(`fetch: ${first.message}; ${e.message}`);
+  }
 }
 
 function demoRows(){
@@ -183,7 +208,7 @@ async function tick(){
   } catch (e) {
     st.className = "status err";
     if (e.message === "no-sheet") { $("setup").hidden = false; st.textContent = "חסר קישור לגיליון"; }
-    else st.textContent = "לא ניתן לקרוא את הגיליון. ודאו שהוא משותף כ-Anyone with the link: Viewer.";
+    else st.textContent = "לא ניתן לקרוא את הגיליון. ודאו שהוא משותף כ-Anyone with the link: Viewer. (" + e.message + ")";
   }
 }
 
