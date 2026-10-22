@@ -38,3 +38,27 @@ details:not(.hide) pre, details:not(.hide) div.highlight {
     direction: ltr;
     text-align: left;
 }
+
+/* The solution block at the end of every page: framed, coloured, impossible to miss */
+details.solution {
+    border: 2px solid var(--pst-color-success, #2e7d32) !important;
+    border-radius: 0.6rem !important;
+    background: var(--pst-color-surface, #f4faf4);
+    margin: 0.6rem 0 1.6rem !important;
+    padding: 0 !important;
+}
+details.solution > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.9rem 1.3rem;
+    font-size: 1.2rem !important;
+    font-weight: 700;
+    color: var(--pst-color-success, #2e7d32);
+}
+details.solution > summary::-webkit-details-marker { display: none; }
+details.solution > summary::before { content: "\25B6\00a0\00a0"; }
+details.solution[open] > summary::before { content: "\25BC\00a0\00a0"; }
+details.solution[open] > summary { border-bottom: 1px solid var(--pst-color-success, #2e7d32); }
+details.solution > :not(summary) { margin-inline: 1.3rem; }
+details.solution > summary { background: rgba(46, 125, 50, 0.10); border-radius: 0.45rem; }
+details.solution[open] > summary { border-radius: 0.45rem 0.45rem 0 0; margin-bottom: 0.9rem; }
