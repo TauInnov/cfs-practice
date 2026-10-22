@@ -32,3 +32,9 @@ div.output_area pre {
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+
+/* Solutions inside a collapsed block: prose right-to-left, code left-to-right */
+details:not(.hide) pre, details:not(.hide) div.highlight {
+    direction: ltr;
+    text-align: left;
+}

@@ -1,0 +1,6 @@
+# Groups the practice pages into weeks in the side menu (see scripts/build_toc.py).
+# To add a week: create weeks/weekN.md (a title and the {tableofcontents} directive, copy weeks/week1.md)
+# and add a block below. Pages are released by adding their file to pages/, as before.
+weeks:
+  - file: weeks/week1
+    pages: [00_gimli, 01_dhahran, 02_mars, 03_ariane, 04_signal]
