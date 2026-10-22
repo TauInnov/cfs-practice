@@ -8,6 +8,17 @@ orphan: true
 
 **התשובה: כ-10,117 ק"ג דלק בהמראה**, פחות ממחצית מ-22,300 הק"ג שנדרשו.
 
+## הנתונים
+
+הפרמטרים מתא הנתונים בעמוד, שעליהם מבוססות כל השורות בהמשך:
+
+```python
+fuel_in_tanks_L = 7682     # fuel measured in the tanks before refuelling (liters)
+required_kg = 22300        # fuel required for the flight (kg)
+factor_used = 1.77         # the crew multiplied liters by this and treated the result as kg
+density = 0.803            # density of the jet fuel (kg/L)
+```
+
 ## שלב אחר שלב
 
 הסעיפים כאן זהים לסעיפי העמוד. סעיפים 1 ו-2 הם מה שהצוות **חשב**, וסעיפים 3 עד 5 הם מה שקרה **בפועל**.
