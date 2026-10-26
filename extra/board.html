@@ -182,7 +182,47 @@ function parseDate(v){
   return m ? new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)) : null;
 }
 
-// Read the sheet through the gviz endpoint (no publish delay).
+// The CSV export keeps every answer as typed. gviz types the Answer column by its majority
+// (numbers), so text answers such as "FTFT" come back empty; it is only the fallback.
+function parseCsv(text){
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell.replace(/\r$/, "")); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+// export timestamps follow the sheet locale, here "26/10/2026 19:57:35" (day first)
+function parseCsvDate(v){
+  const m = /^(\d+)\/(\d+)\/(\d{4})(?:\s+(\d+):(\d+):(\d+))?/.exec(v || "");
+  return m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0)) : null;
+}
+
+async function fetchCsv(id){
+  const r = await fetch(`https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/export?format=csv&gid=${GID}&_=${Date.now()}`,
+                        { cache: "no-store" });
+  if (!r.ok) throw new Error("csv http " + r.status);
+  const [head, ...body] = parseCsv(await r.text());
+  if (!head || head[0].trim().startsWith("<")) throw new Error("csv: not csv (sign-in page?)");
+  const cols = head.map(c => c.trim().toLowerCase());
+  let ri = cols.indexOf("round"), ai = cols.indexOf("answer");
+  if (ri < 0) ri = 1; if (ai < 0) ai = 2;
+  return body.map(c => ({ t: parseCsvDate(c[0]),
+                          round: String(c[ri] ?? "").trim().toLowerCase(),
+                          answer: c[ai] ?? "" }));
+}
+
+// Fallback: the gviz endpoint (no publish delay).
 // First a plain fetch; if the browser refuses it, fall back to JSONP via a script tag.
 function parseResp(resp){
   if (!resp || resp.status === "error") {
@@ -217,6 +257,7 @@ async function fetchRows(){
   if (DEMO) return demoRows();
   const id = sheetId();
   if (!id) throw new Error("no-sheet");
+  try { return await fetchCsv(id); } catch (e) { console.warn("board: csv export failed, using gviz", e); }
   const base = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq?gid=${GID}`;
   let first;
   try {
