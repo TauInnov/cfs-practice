@@ -5,4 +5,4 @@ weeks:
   - file: weeks/week1
     pages: [00_gimli, 01_dhahran, 02_mars, 03_ariane, 04_signal]
   - file: weeks/week2
-    pages: [10_af447, 11_polar, 12_genesis]
+    pages: [13_stars, 11_polar, 14_oumuamua]
