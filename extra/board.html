@@ -147,14 +147,14 @@ const GID = "1276875717";       // the "Form Responses 1" tab
 const REFRESH_MS = 4000;
 const TOP = 8;
 const ROUNDS = [
-  { id: "gimli",   n: 0, title: "גימלי",       sub: "דוגמה · יולי 1983",  file: "00_gimli" },
-  { id: "dhahran", n: 1, title: "דהראן",       sub: "פברואר 1991",        file: "01_dhahran" },
-  { id: "mars",    n: 2, title: "מאדים",       sub: "ספטמבר 1999",        file: "02_mars" },
-  { id: "ariane",  n: 3, title: "אריאן 5",     sub: "יוני 1996",          file: "03_ariane" },
-  { id: "signal",  n: 4, title: "אות רדיו",    sub: "1977",               file: "04_signal" },
-  { id: "stars",    n: 1, of: 3, title: "אנני ג'אמפ קנון", sub: "שבוע 2 · הרווארד 1901",  file: "13_stars" },
-  { id: "polar",    n: 2, of: 3, title: "נחתת מאדים",     sub: "שבוע 2 · דצמבר 1999",   file: "11_polar" },
-  { id: "oumuamua", n: 3, of: 3, title: "אומואמואה",      sub: "שבוע 2 · אוקטובר 2017",  file: "14_oumuamua" },
+  { week: 1, id: "gimli",   n: 0, title: "גימלי",       sub: "דוגמה · יולי 1983",  file: "00_gimli" },
+  { week: 1, id: "dhahran", n: 1, title: "דהראן",       sub: "פברואר 1991",        file: "01_dhahran" },
+  { week: 1, id: "mars",    n: 2, title: "מאדים",       sub: "ספטמבר 1999",        file: "02_mars" },
+  { week: 1, id: "ariane",  n: 3, title: "אריאן 5",     sub: "יוני 1996",          file: "03_ariane" },
+  { week: 1, id: "signal",  n: 4, title: "אות רדיו",    sub: "1977",               file: "04_signal" },
+  { week: 2, id: "stars",    n: 1, of: 3, title: "אנני ג'אמפ קנון", sub: "שבוע 2 · הרווארד 1901",  file: "13_stars" },
+  { week: 2, id: "polar",    n: 2, of: 3, title: "נחתת מאדים",     sub: "שבוע 2 · דצמבר 1999",   file: "11_polar" },
+  { week: 2, id: "oumuamua", n: 3, of: 3, title: "אומואמואה",      sub: "שבוע 2 · אוקטובר 2017",  file: "14_oumuamua" },
 ];
 
 const $ = id => document.getElementById(id);
@@ -399,7 +399,7 @@ async function tick(){
 // ------------------------------------------------------------ controls
 for (const r of ROUNDS) {
   const o = document.createElement("option");
-  o.value = r.id; o.textContent = `${r.n}. ${r.title}`;
+  o.value = r.id; o.textContent = `${r.week}.${r.n} ${r.title}`;
   $("round").appendChild(o);
 }
 $("round").value = params.get("round") || load("cfs_round") || "gimli";
