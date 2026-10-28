@@ -164,6 +164,15 @@ const S = { phase: "idle", since: null, endAt: null, rows: [], shownDots: 0, rev
 
 function store(k, v){ try{ localStorage.setItem(k, v) }catch(e){} }
 function load(k){ try{ return localStorage.getItem(k) }catch(e){ return null } }
+// Round start / reveal are logged as rows in the same form, so solve times can be computed later.
+// Round = "_start" or "_reveal", Answer = round id, elapsed = round length (start) or seconds since start (reveal).
+const FORM = "https://docs.google.com/forms/d/e/1FAIpQLSeNgz35HNF6aVscL6w0aJdp50-UhDdP_f76NGQ4j0dRgf7-ow/formResponse";
+function logEvent(kind, seconds){
+  if (DEMO) return;
+  const body = new URLSearchParams({"entry.839828677": "_" + kind, "entry.1193077998": round().id,
+    "entry.1055958655": String(seconds)});
+  fetch(FORM, { method: "POST", mode: "no-cors", body }).catch(e => console.warn("board: event not logged", e));
+}
 function sheetId(){ return SHEET_ID || load("cfs_sheet_id") || ""; }
 const round = () => ROUNDS.find(r => r.id === $("round").value) || ROUNDS[0];
 
@@ -410,9 +419,11 @@ $("round").addEventListener("change", () => {
 $("mins").addEventListener("change", renderTimer);
 $("start").addEventListener("click", () => {
   S.phase = "live"; S.since = new Date(); S.endAt = Date.now() + +$("mins").value * 60000;
+  logEvent("start", +$("mins").value * 60);
   $("answer").value = ""; $("panel").replaceChildren(); render();
 });
 $("reveal").addEventListener("click", () => {
+  logEvent("reveal", S.since ? Math.round((Date.now() - S.since) / 1000) : "");
   S.phase = "revealed"; $("panel").replaceChildren(); render(); $("answer").focus();
 });
 $("answer").addEventListener("input", renderPanel);
