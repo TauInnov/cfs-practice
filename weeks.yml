@@ -8,3 +8,5 @@ weeks:
     pages: [13_stars, 11_polar, 14_oumuamua]
   - file: weeks/week3
     pages: [20_challenger, 21_germanium, 22_peas]
+  - file: weeks/week4
+    pages: [30_neptune, 31_dc, 32_pisa]
