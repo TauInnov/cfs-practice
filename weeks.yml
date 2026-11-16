@@ -12,3 +12,5 @@ weeks:
     pages: [30_neptune, 31_dc, 32_pisa]
   - file: weeks/week5
     pages: [40_parallel, 41_braking, 42_ice]
+  - file: weeks/week6
+    pages: [50_calorimetry, 51_resistors, 52_cayenne]
