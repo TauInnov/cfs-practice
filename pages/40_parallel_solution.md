@@ -15,9 +15,9 @@ orphan: true
 <div dir="ltr" style="text-align: left">
 
 ```python
-V = 12.0                          # battery voltage (V)
-resistors = [100, 220, 470, 1000]   # the resistors, all connected in parallel to the battery (ohm)
-r_internal = 2.0                    # internal resistance of the battery (ohm)
+V = 12.0                            # battery voltage (V)
+resistors = [100, 220, 470, 1000]   # the resistances, all connected in parallel to the battery (ohm)
+r_internal = 2.0                    # internal resistance of the battery, used in section 4 (ohm)
 
 
 # the function as it was given to you: the equivalent resistance of resistors in parallel
@@ -43,21 +43,21 @@ def apply_to_all(f, values):
 
 הסעיפים כאן זהים לסעיפי העמוד.
 
-**1. קריאת קוד.** הניבוי: `R_s` הוא 1790 אוהם, ו-`R_p` בין 0 ל-100 אוהם. בפועל:
+**1. קריאת קוד.** `R_p` היא ההתנגדות השקולה במקביל, וצריכה להיות קטנה מ-100 אוהם. `R_s` היא ההתנגדות השקולה בטור, סכום הנגדים: 1790 אוהם. בפועל:
 
 <div dir="ltr" style="text-align: left">
 
 ```python
 R_p = parallel(resistors)
 R_s = series(resistors)
-print(R_p)              # 56.58...: as predicted
+print(R_p)              # 56.58...: as expected
 print(R_s)              # 0.0176...: not 1790
 print(resistors)        # [0.01, 0.0045..., 0.0021..., 0.001]
 ```
 
 </div>
 
-השורה <span dir="ltr">`rs[i] = 1 / rs[i]`</span> מחליפה כל נגד בהופכי שלו. `rs` אינו עותק של `resistors`, אלא שם נוסף לאותה רשימה, ולכן הפונקציה שינתה את `resistors`. `series` קיבלה אחר כך את ההופכיים וסכמה אותם.
+השורה <span dir="ltr">`rs[i] = 1 / rs[i]`</span> מחליפה כל התנגדות בהופכי שלה. `rs` אינו עותק של `resistors`, אלא שם נוסף לאותה רשימה, ולכן הפונקציה שינתה את `resistors`. `parallel` עצמה החזירה ערך נכון, כי היא סכמה את ההופכיים כפי שהנוסחה דורשת. אבל `series` קיבלה אחר כך את הרשימה המשונה, וסכמה את ההופכיים במקום את ההתנגדויות.
 
 **2. התיקון.** מחשבים את הסכום במשתנה נפרד, ואת `rs` רק קוראים:
 
@@ -71,7 +71,7 @@ def parallel(rs):
     return 1 / total
 
 R_s == 1790             # True
-0 < R_p < 100           # True
+R_p < min(resistors)    # True
 ```
 
 </div>
@@ -87,7 +87,7 @@ abs(sum(currents) - V / R_p) < 1e-12                    # True
 
 </div>
 
-**4. סוללה אמיתית.** כל פונקציה מתרגמת נוסחה אחת, וקוראת לפונקציה הקודמת. את `emf` ו-`r` מעבירים הלאה, אחרת הפונקציה הפנימית תשתמש בערכי ברירת המחדל שלה:
+**4. סוללה אמיתית.** כל פונקציה מתרגמת שלב אחד, וקוראת לפונקציה של השלב הקודם. את `emf` ו-`r` מעבירים הלאה, אחרת הפונקציה הפנימית תשתמש בערכי ברירת המחדל שלה:
 
 <div dir="ltr" style="text-align: left">
 
@@ -115,17 +115,17 @@ abs(12.0 * I - (total_power(resistors, r=r_internal) + I ** 2 * r_internal)) < 1
 
 </div>
 
-ההספק של הסוללה הוא כ-2.458 וואט: כ-2.374 בנגדים, וכ-0.084 בהתנגדות הפנימית.
+הסוללה מספקת כ-2.458 וואט: כ-2.374 הופכים לחום בנגדים, וכ-0.084 בתוך הסוללה.
 
 ## מה עומד מאחורי זה
 
-רשימה היא אובייקט שאפשר לשנות (mutable). כשמעבירים רשימה לפונקציה, הפרמטר הוא שם נוסף לאותה רשימה, ולא עותק שלה. בסעיף 1 הפונקציה `parallel` החזירה ערך נכון, ולכן הטעות לא נראתה בה עצמה, אלא רק בשורה הבאה שהשתמשה ב-`resistors`. זו הסיבה שכדאי לנבא את התוצאה לפני שמריצים: ניבוי פשוט (1790) חושף מיד את הבעיה. בסעיף 4, הבדיקות של המקרה האידיאלי ושל שימור האנרגיה הן אותו רעיון: תוצאה שאפשר לדעת מראש, שבודקת את הקוד.
+רשימה היא אובייקט שאפשר לשנות (mutable). כשמעבירים רשימה לפונקציה, הפרמטר הוא שם נוסף לאותה רשימה, ולא עותק שלה. בסעיף 1 הפונקציה `parallel` החזירה ערך נכון, ולכן הטעות לא נראתה בה עצמה, אלא רק בשורה הבאה שהשתמשה ב-`resistors`. בדיקה של התוצאה מול ערך שאפשר לדעת מראש (1790) חושפת את הבעיה מיד. בסעיף 4, הבדיקות של המקרה האידיאלי ושל שימור האנרגיה הן אותו רעיון.
 
 ## תשובות שגויות נפוצות
 
 - **2.545:** סוללה אידיאלית, בלי ההתנגדות הפנימית: `r` לא הועבר, ו-`total_power` השתמשה בערך ברירת המחדל 0.
-- **2.458:** ההספק של הסוללה כולה, <span dir="ltr">&#8288;$\varepsilon I$</span>, כולל ההפסד בתוכה, או חישוב ההספקים עם <span dir="ltr">&#8288;$\varepsilon$</span> במקום עם <span dir="ltr">&#8288;$V_t$</span>.
-- **2.368:** חישוב הזרם בלי <span dir="ltr">&#8288;$r$</span> במכנה, <span dir="ltr">&#8288;$\varepsilon/R_p$</span>.
+- **2.458:** ההספק שהסוללה מספקת, <span dir="ltr">&#8288;$\varepsilon \cdot I$</span>, כולל ההפסד בתוכה, או חישוב ההספקים עם <span dir="ltr">&#8288;$\varepsilon$</span> במקום עם <span dir="ltr">&#8288;$V_t$</span>.
+- **2.368:** חישוב הזרם בלי <span dir="ltr">&#8288;$r$</span> במכנה, <span dir="ltr">&#8288;$\varepsilon / R_p$</span>.
 - **0.080:** חישוב עם ההתנגדות בטור במקום במקביל.
 - **ערך עצום, אלפי וואט ויותר:** חישוב אחרי ש-`resistors` שונתה בסעיף 1 ולא שוחזרה.
 
@@ -144,6 +144,8 @@ print(add_resistor_b(resistors, 330), resistors)    # about 48.3, resistors now 
 
 </div>
 
-האחוז שמתבזבז בסוללה הוא <span dir="ltr">&#8288;$r/(r+R_p)$</span> בערך 3.4%, ואינו תלוי במתח. <span dir="ltr">`rs + [R]`</span> יוצר רשימה **חדשה** ומצמיד אליה את השם המקומי `rs`, ולכן `resistors` לא משתנה. <span dir="ltr">`rs.append(R)`</span> משנה את הרשימה עצמה, ולכן גם את `resistors`.
+האחוז שהופך לחום בתוך הסוללה הוא <span dir="ltr">&#8288;$r/(r + R_p)$</span>, בערך 3.4%, ואינו תלוי במתח.
+
+<span dir="ltr">`rs + [R]`</span> יוצר רשימה **חדשה** ומצמיד אליה את השם המקומי `rs`, ולכן `resistors` לא משתנה. <span dir="ltr">`rs.append(R)`</span> משנה את הרשימה עצמה, ולכן גם את `resistors`.
 
 <p><a href="../board.html?round=parallel">→ חזרה ללוח התשובות</a></p>
